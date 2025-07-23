@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Pong</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 900px;
+            height: 500px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            border: 2px solid #00ffff;
+            border-radius: 20px;
+            box-shadow:
+                0 0 50px rgba(0, 255, 255, 0.5),
+                inset 0 0 50px rgba(0, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                transparent,
+                rgba(0, 255, 255, 0.5),
+                transparent);
+            transform: translateX(-50%);
+        }
+
+        .paddle {
+            position: absolute;
+            width: 12px;
+            height: 100px;
+            border-radius: 10px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .paddle.player-1 {
+            left: 20px;
+            top: 200px;
+            background: linear-gradient(to bottom, #FF073A, #FF4D4D);
+            box-shadow:
+                0 0 20px rgba(255, 7, 58, 0.8),
+                0 0 40px rgba(255, 7, 58, 0.4);
+        }
+
+        .paddle.player-2 {
+            right: 20px;
+            top: 200px;
+            background: linear-gradient(to bottom, #00BFFF, #1E90FF);
+            box-shadow:
+                0 0 20px rgba(0, 191, 255, 0.8),
+                0 0 40px rgba(0, 191, 255, 0.4);
+        }
+
+        .paddle.player-1.active {
+            box-shadow:
+                0 0 30px rgba(255, 7, 58, 1),
+                0 0 60px rgba(255, 7, 58, 0.6);
+        }
+
+        .paddle.player-2.active {
+            box-shadow:
+                0 0 30px rgba(0, 191, 255, 1),
+                0 0 60px rgba(0, 191, 255, 0.6);
+        }
+
+        .ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #FFFFFF, #00FF41);
+            border-radius: 50%;
+            box-shadow:
+                0 0 20px rgba(0, 255, 65, 1),
+                0 0 40px rgba(0, 255, 65, 0.5);
+            left: 440px;
+            top: 240px;
+        }
+
+        .score {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 50px;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .score .player-1-score {
+            color: #FF073A;
+            text-shadow: 0 0 20px rgba(255, 7, 58, 0.8);
+        }
+
+        .score .player-2-score {
+            color: #00BFFF;
+            text-shadow: 0 0 20px rgba(0, 191, 255, 0.8);
+        }
+
+        .score span {
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            z-index: 5;
+        }
+
+        .start-screen, .pause-screen, .controls-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .start-screen {
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ffff;
+        }
+
+        .pause-screen {
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ffff;
+        }
+
+        .controls-info {
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            color: #00ffff;
+            padding: 20px;
+        }
+
+        .controls-scroll {
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .controls-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .controls-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .controls-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            flex-shrink: 0;
+        }
+
+        .start-screen p, .pause-screen p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .start-btn, .action-btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            background: transparent;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            margin: 5px;
+            flex-shrink: 0;
+        }
+
+        .start-btn:hover, .action-btn:hover {
+            background: #00ffff;
+            color: #0a0a0a;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        }
+
+        .mode-selector {
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        .mode-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .mode-selector select {
+            padding: 8px;
+            font-size: 14px;
+            background: transparent;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+            width: 200px;
+        }
+
+        .mode-selector select option {
+            background: #0a0a2a;
+            color: #00ffff;
+        }
+
+        .info-box {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 5px 0;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .info-box h3 {
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-box li {
+            margin: 8px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .info-box li strong {
+            color: #00ffff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #00ffff;
+            font-size: 24px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            z-index: 20;
+        }
+
+        .close-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .difficulty-info {
+            font-size: 12px;
+            margin: 5px 0;
+            opacity: 0.8;
+            text-align: center;
+            max-width: 250px;
+        }
+
+        /* Fix for hiding difficulty info in two-player mode */
+        .difficulty-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .difficulty-container.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score">
+            <span class="player-1-score" id="player1-score">0</span>
+            <span class="player-2-score" id="player2-score">0</span>
+        </div>
+        
+        <div class="paddle player-1" id="paddle1"></div>
+        <div class="paddle player-2" id="paddle2"></div>
+        <div class="ball" id="ball"></div>
+        
+        <div class="controls">
+            <p id="controlText">Select game mode to start</p>
+        </div>
+        
+        <!-- Start Screen -->
+        <div class="start-screen" id="startScreen">
+            <h1>NEON PONG</h1>
+            <div class="mode-selector">
+                <label>Game Mode:
+                    <select id="gameMode">
+                        <option value="single">Single Player vs AI</option>
+                        <option value="multi">Two Players</option>
+                    </select>
+                </label>
+                
+                <div class="difficulty-container" id="difficultyContainer">
+                    <label>AI Difficulty:
+                        <select id="aiDifficulty">
+                            <option value="easy">Easy (Novice)</option>
+                            <option value="medium">Medium (Skilled)</option>
+                            <option value="hard">Hard (Expert)</option>
+                            <option value="extreme">Extreme (Master)</option>
+                        </select>
+                    </label>
+                    <div class="difficulty-info" id="difficultyInfo">Easy: AI reacts slowly and makes frequent mistakes</div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="start-btn" onclick="startGame()">START GAME</button>
+                <button class="start-btn" onclick="showControls()">CONTROLS</button>
+            </div>
+        </div>
+
+        <!-- Pause Screen -->
+        <div class="pause-screen hidden" id="pauseScreen">
+            <h1>GAME PAUSED</h1>
+            <div class="button-group">
+                <button class="action-btn" onclick="togglePause()">RESUME</button>
+                <button class="action-btn" onclick="showControls()">CONTROLS</button>
+                <button class="action-btn" onclick="quitGame()">QUIT</button>
+            </div>
+        </div>
+
+        <!-- Controls Info -->
+        <div class="controls-info hidden" id="controlsInfo">
+            <button class="close-btn" onclick="closeControls()">×</button>
+            <div class="controls-scroll">
+                <h1>CONTROLS</h1>
+                
+                <div class="info-box">
+                    <h3>Player Controls</h3>
+                    <ul>
+                        <li><strong>Player 1:</strong> W (Up) / S (Down)</li>
+                        <li><strong>Player 2:</strong> ↑ (Up) / ↓ (Down)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Game Controls</h3>
+                    <ul>
+                        <li><strong>SPACE:</strong> Pause/Resume Game</li>
+                        <li><strong>ESC:</strong> Quit to Menu</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Objective</h3>
+                    <ul>
+                        <li>First to 10 points wins</li>
+                        <li>Ball speed increases slightly with each hit</li>
+                        <li>Use paddle angle to control ball direction</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Tips</h3>
+                    <ul>
+                        <li><strong>Angle Control:</strong> Hit ball with top/bottom of paddle for spin</li>
+                        <li><strong>Speed Management:</strong> Try to control ball speed with paddle hits</li>
+                        <li><strong>AI Patterns:</strong> Watch for AI positioning patterns</li>
+                    </ul>
+                </div>
+                
+                <button class="action-btn" onclick="closeControls()">BACK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+        const gameContainer = document.querySelector('.game-container');
+        const paddle1 = document.getElementById('paddle1');
+        const paddle2 = document.getElementById('paddle2');
+        const ball = document.getElementById('ball');
+        const player1Score = document.getElementById('player1-score');
+        const player2Score = document.getElementById('player2-score');
+        const startScreen = document.getElementById('startScreen');
+        const pauseScreen = document.getElementById('pauseScreen');
+        const controlsInfo = document.getElementById('controlsInfo');
+        const gameMode = document.getElementById('gameMode');
+        const aiDifficulty = document.getElementById('aiDifficulty');
+        const difficultyContainer = document.getElementById('difficultyContainer');
+        const difficultyInfo = document.getElementById('difficultyInfo');
+        const controlText = document.getElementById('controlText');
+
+        // Game state
+        let gameRunning = false;
+        let gamePaused = false;
+        let singlePlayer = true;
+        let aiLevel = 'easy';
+        let score1 = 0;
+        let score2 = 0;
+        let ballX = 440;
+        let ballY = 240;
+        let ballSpeedX = 5;
+        let ballSpeedY = 3;
+        let paddle1Y = 200;
+        let paddle2Y = 200;
+        let aiTargetY = 200;
+        let ballHitCount = 0;
+        const paddleSpeed = 8;
+        const ballSpeed = 5;
+
+        // AI difficulty settings
+        const aiSettings = {
+            easy: {
+                reaction: 0.6,
+                error: 60,
+                speed: 5,
+                prediction: 0.7,
+                description: "Easy: AI reacts slowly and makes frequent mistakes"
+            },
+            medium: {
+                reaction: 0.3,
+                error: 25,
+                speed: 7,
+                prediction: 0.85,
+                description: "Medium: AI plays well but occasional errors"
+            },
+            hard: {
+                reaction: 0.15,
+                error: 10,
+                speed: 8.5,
+                prediction: 0.95,
+                description: "Hard: AI plays very accurately with rare mistakes"
+            },
+            extreme: {
+                reaction: 0.05,
+                error: 3,
+                speed: 9.5,
+                prediction: 1.0,
+                description: "Extreme: AI plays nearly perfectly"
+            }
+        };
+
+        // Input handling
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (gameRunning) togglePause();
+            } else if (e.key === 'Escape' && gameRunning) {
+                quitGame();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Update difficulty info and visibility when selection changes
+        gameMode.addEventListener('change', (e) => {
+            singlePlayer = e.target.value === 'single';
+            updateDifficultyVisibility();
+            updateControlText();
+        });
+
+        aiDifficulty.addEventListener('change', (e) => {
+            aiLevel = e.target.value;
+            updateDifficultyInfo();
+        });
+
+        function updateDifficultyVisibility() {
+            if (singlePlayer) {
+                difficultyContainer.classList.remove('hidden');
+                updateDifficultyInfo();
+            } else {
+                difficultyContainer.classList.add('hidden');
+            }
+        }
+
+        function updateDifficultyInfo() {
+            difficultyInfo.textContent = aiSettings[aiDifficulty.value].description;
+        }
+
+        function updateControlText() {
+            if (!gameRunning) {
+                controlText.textContent = singlePlayer ?
+                    'Player: W/S | AI Difficulty: ' + aiDifficulty.value :
+                    'Player 1: W/S | Player 2: ↑/↓';
+            }
+        }
+
+        function startGame() {
+            singlePlayer = gameMode.value === 'single';
+            aiLevel = aiDifficulty.value;
+            ballHitCount = 0;
+            
+            startScreen.classList.add('hidden');
+            controlsInfo.classList.add('hidden');
+            gameRunning = true;
+            gamePaused = false;
+            resetBall();
+            resetScores();
+            updateControlText();
+            gameLoop();
+        }
+
+        function showControls() {
+            controlsInfo.classList.remove('hidden');
+            startScreen.classList.add('hidden');
+            pauseScreen.classList.add('hidden');
+        }
+
+        function closeControls() {
+            controlsInfo.classList.add('hidden');
+            if (!gameRunning) {
+                startScreen.classList.remove('hidden');
+            } else if (gamePaused) {
+                pauseScreen.classList.remove('hidden');
+            }
+        }
+
+        function quitGame() {
+            gameRunning = false;
+            gamePaused = false;
+            pauseScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            resetBall();
+            resetScores();
+            updateControlText();
+        }
+
+        function resetBall() {
+            ballX = 440;
+            ballY = 240;
+            ballSpeedX = (Math.random() > 0.5 ? ballSpeed : -ballSpeed) * 1.2;
+            ballSpeedY = (Math.random() - 0.5) * 8;
+            ballHitCount = 0;
+        }
+
+        function resetScores() {
+            score1 = 0;
+            score2 = 0;
+            player1Score.textContent = '0';
+            player2Score.textContent = '0';
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            if (gamePaused) {
+                pauseScreen.classList.remove('hidden');
+            } else {
+                pauseScreen.classList.add('hidden');
+                gameLoop();
+            }
+        }
+
+        function updatePaddles() {
+            // Player 1 controls (W/S) - Red paddle
+            if (keys['w'] && paddle1Y > 0) {
+                paddle1Y -= paddleSpeed;
+                paddle1.classList.add('active');
+            } else if (keys['s'] && paddle1Y < 400) {
+                paddle1Y += paddleSpeed;
+                paddle1.classList.add('active');
+            } else {
+                paddle1.classList.remove('active');
+            }
+
+            // Player 2 or AI controls - Blue paddle
+            if (singlePlayer) {
+                updateAI();
+            } else {
+                // Player 2 controls (Arrow Up/Down)
+                if (keys['arrowup'] && paddle2Y > 0) {
+                    paddle2Y -= paddleSpeed;
+                    paddle2.classList.add('active');
+                } else if (keys['arrowdown'] && paddle2Y < 400) {
+                    paddle2Y += paddleSpeed;
+                    paddle2.classList.add('active');
+                } else {
+                    paddle2.classList.remove('active');
+                }
+            }
+
+            paddle1.style.top = paddle1Y + 'px';
+            paddle2.style.top = paddle2Y + 'px';
+        }
+
+        function updateAI() {
+            const settings = aiSettings[aiLevel];
+            
+            if (ballSpeedX > 0) {
+                const timeToReach = (848 - ballX) / Math.abs(ballSpeedX);
+                
+                let projectedY = ballY + ballSpeedY * timeToReach;
+                
+                if (settings.prediction > 0.9) {
+                    let tempY = projectedY;
+                    let tempSpeedY = ballSpeedY;
+                    let tempTime = timeToReach;
+                    
+                    while (tempTime > 0) {
+                        if (tempY <= 0 || tempY >= 480) {
+                            tempSpeedY = -tempSpeedY;
+                        }
+                        tempY += tempSpeedY * 0.1;
+                        tempTime -= 0.1;
+                    }
+                    projectedY = tempY;
+                }
+                
+                const error = (Math.random() - 0.5) * settings.error * (1 - ballHitCount * 0.01);
+                aiTargetY = projectedY + error - 50;
+                aiTargetY = Math.max(10, Math.min(390, aiTargetY));
+            }
+
+            if (Math.random() > settings.reaction) {
+                const diff = aiTargetY - paddle2Y;
+                const moveSpeed = Math.min(settings.speed + ballHitCount * 0.1, 12);
+                
+                if (Math.abs(diff) > 2) {
+                    paddle2Y += diff > 0 ? moveSpeed : -moveSpeed;
+                    paddle2.classList.add('active');
+                } else {
+                    paddle2.classList.remove('active');
+                }
+                
+                if (settings.error > 15) {
+                    paddle2Y += (Math.random() - 0.5) * 2;
+                }
+            }
+        }
+
+        function updateBall() {
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            if (ballY <= 0 || ballY >= 480) {
+                ballSpeedY = -ballSpeedY;
+                ballY = Math.max(0, Math.min(480, ballY));
+            }
+
+            if (ballX <= 32 && ballY >= paddle1Y - 10 && ballY <= paddle1Y + 110) {
+                ballSpeedX = Math.abs(ballSpeedX);
+                const hitPos = (ballY - paddle1Y - 50) / 50;
+                ballSpeedY = hitPos * 10;
+                ballHitCount++;
+                ballSpeedX *= 1.05;
+                ballSpeedY *= 1.02;
+            }
+
+            if (ballX >= 848 && ballY >= paddle2Y - 10 && ballY <= paddle2Y + 110) {
+                ballSpeedX = -Math.abs(ballSpeedX);
+                const hitPos = (ballY - paddle2Y - 50) / 50;
+                ballSpeedY = hitPos * 10;
+                ballHitCount++;
+                ballSpeedX *= 1.05;
+                ballSpeedY *= 1.02;
+            }
+
+            if (ballX < 0) {
+                score2++;
+                player2Score.textContent = score2;
+                resetBall();
+                if (score2 >= 10) endGame(singlePlayer ? 'AI' : 'Player 2');
+            }
+
+            if (ballX > 880) {
+                score1++;
+                player1Score.textContent = score1;
+                resetBall();
+                if (score1 >= 10) endGame('Player 1');
+            }
+
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+        }
+
+        function endGame(winner) {
+            gameRunning = false;
+            gamePaused = false;
+            pauseScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            resetBall();
+            resetScores();
+            updateControlText();
+        }
+
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+
+            updatePaddles();
+            updateBall();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        updateDifficultyVisibility();
+        updateDifficultyInfo();
+        updateControlText();
+    </script>
+</body>
+</html>
